@@ -1,5 +1,11 @@
 # inspired by https://andrew.wang-hoyer.com/experiments/chaos-game
 
+# requirements -- Matplotlib
+
+FIG_SIZE = 10
+DPI = 100
+FILE_NAME, FILE_FORMAT = "chaos_game", "png"
+
 from random import randint, random
 import matplotlib.pyplot as plt
 from math import sin, cos, pi 
@@ -45,12 +51,13 @@ class ChaosGame:
         self.num_targets = num_targets
         self.transformations = transformations
         self.coloring = coloring
-        fig, ax = plt.subplots(figsize=(12, 12))
-        ax.axis('off')
-        ax.set_aspect('equal')
-        fig.patch.set_facecolor('white')
+        plt.ion() 
+        self.fig, self.ax = plt.subplots(figsize=(FIG_SIZE, FIG_SIZE))
+        self.ax.axis('off')
+        self.ax.set_aspect('equal')
+        self.fig.patch.set_facecolor('black')
         self.vertices = [(cos(2*pi/num_targets*i), sin(2*pi/num_targets*i)) for i in range(num_targets)] if num_targets % 2 == 0 else [(cos(pi/2 - 2*pi/num_targets*i), sin(pi/2 - 2*pi/num_targets*i)) for i in range(num_targets)]
-        ax.scatter(*zip(*self.vertices), color='black', s=self.point_size, linewidths=0)
+        self.ax.scatter(*zip(*self.vertices), color='black', s=self.point_size, linewidths=0)
         self.points=[(0, 0)]
         self.colors=[]
 
@@ -64,7 +71,9 @@ class ChaosGame:
     def choose_vertex(self):
         return randint(0, self.num_targets-1)
 
-    def generate_points(self, n = 1000000):
+    def generate_points(self, n = 1000000, draw=True):
+        self.points=self.points[-1:]
+        self.colors=[]
 
         self.verts = [0, 0, 0]
 
@@ -85,8 +94,10 @@ class ChaosGame:
 
             self.colors.append(color)
 
-        plt.scatter(*zip(*self.points), c=self.colors, s=self.point_size, linewidths=0)
-        plt.show()
+        self.ax.scatter(*zip(*self.points), c=self.colors, s=self.point_size, linewidths=0)
+        if draw:
+            plt.draw()
+            plt.pause(0.01)
 
 class ChaosGameHistExc(ChaosGame):
 
@@ -128,6 +139,7 @@ class ChaosGameTargetTransform(ChaosGame):
     def choose_transform(self, vert):
         return self.transformations[vert]
 
+
 cg = ChaosGameHistExc2( # OR ChaosGameHistExc OR ChaosGameTargetTransform
     quality='fine', # presets: ['rough', 'low', 'medium', 'fine'] or enter specific point size
     num_targets=6, # number of vertices, ideally 3-12
@@ -137,8 +149,20 @@ cg = ChaosGameHistExc2( # OR ChaosGameHistExc OR ChaosGameTargetTransform
     ], # if TargetTransform, num trans = num vertices 
     coloring=[(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0)],
     # ^^ 4 cornered colors: [top-left, top-right, bottom-left, bottom-right] 
-    excluded=[1, 2, 3, 4] # list of excluded vertices [variations, based on history] (if applicable)
+    excluded=[1, 3, 5] # list of excluded vertices [variations, based on history] (if applicable)
     # hist_len=1 # for ChaosGameHistExc, length of history to consider 
 )
 
 cg.generate_points(1500000) # 1000000 by default
+
+while True:
+    x = input("Add more points? (If so, enter number, else enter 'n'): ")
+    if x == "n":
+        break 
+    if not x.isnumeric(): 
+        continue 
+    cg.generate_points(int(x))
+    
+# plt.savefig(f"{FILE_NAME}.{FILE_FORMAT}", dpi=DPI, format=FILE_FORMAT)
+input()
+    
